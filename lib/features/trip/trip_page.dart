@@ -84,7 +84,7 @@ class TripPage extends ConsumerWidget {
                             child: IconButton(
                               padding: const EdgeInsets.all(16),
                               icon: const Icon(LucideIcons.listFilter),
-                              onPressed: () {},
+                              onPressed: () => context.push('/filter'),
                             ),
                           ),
                         ],

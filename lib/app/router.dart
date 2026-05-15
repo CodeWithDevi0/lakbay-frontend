@@ -10,6 +10,13 @@ import '../features/auth/landing_page.dart';
 import '../features/auth/login_page.dart';
 import '../features/auth/signup_page.dart';
 import '../features/home/destination_details_page.dart';
+import '../features/trip/trip_details_page.dart';
+import '../features/group/group_details_page.dart';
+import '../features/planner/ai_planner_page.dart';
+import '../features/profile/edit_profile_page.dart';
+import '../features/profile/settings_detail_page.dart';
+import '../features/home/notifications_page.dart';
+import '../features/home/filter_destinations_page.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -36,6 +43,34 @@ final goRouter = GoRouter(
         return DestinationDetailsPage(id: id);
       },
     ),
+    GoRoute(
+      path: '/trip/:id',
+      builder: (context, state) {
+        final id = state.pathParameters['id']!;
+        return TripDetailsPage(id: id);
+      },
+    ),
+    GoRoute(
+      path: '/group/:id',
+      builder: (context, state) {
+        final id = state.pathParameters['id']!;
+        return GroupDetailsPage(id: id);
+      },
+    ),
+    GoRoute(
+      path: '/ai-planner',
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>?;
+        return AIPlannerPage(
+          destination: extra?['destination'],
+          isSolo: extra?['isSolo'] ?? true,
+        );
+      },
+    ),
+    GoRoute(
+      path: '/filter',
+      builder: (context, state) => const FilterDestinationsPage(),
+    ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {
         return ScaffoldWithNavBar(navigationShell: navigationShell);
@@ -46,6 +81,12 @@ final goRouter = GoRouter(
             GoRoute(
               path: '/home',
               builder: (context, state) => const HomePage(),
+              routes: [
+                GoRoute(
+                  path: 'notifications',
+                  builder: (context, state) => const NotificationsPage(),
+                ),
+              ],
             ),
           ],
         ),
@@ -70,6 +111,19 @@ final goRouter = GoRouter(
             GoRoute(
               path: '/profile',
               builder: (context, state) => const ProfilePage(),
+              routes: [
+                GoRoute(
+                  path: 'edit',
+                  builder: (context, state) => const EditProfilePage(),
+                ),
+                GoRoute(
+                  path: 'settings/:type',
+                  builder: (context, state) {
+                    final type = state.pathParameters['type']!;
+                    return SettingsDetailPage(title: type[0].toUpperCase() + type.substring(1));
+                  },
+                ),
+              ],
             ),
           ],
         ),

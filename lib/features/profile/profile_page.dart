@@ -92,7 +92,7 @@ class ProfilePage extends ConsumerWidget {
                             SizedBox(
                               width: double.infinity,
                               child: OutlinedButton(
-                                onPressed: () {},
+                                onPressed: () => context.push('/profile/edit'),
                                 style: OutlinedButton.styleFrom(
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                   side: BorderSide(color: isDark ? Colors.grey[800]! : Colors.grey[300]!),
@@ -190,13 +190,13 @@ class ProfilePage extends ConsumerWidget {
                       icon: LucideIcons.bell,
                       title: 'Notifications',
                       subtitle: 'Push, email, SMS',
-                      onTap: () {},
+                      onTap: () => context.push('/profile/settings/notifications'),
                     ),
                     _SettingsItem(
                       icon: LucideIcons.mapPin,
                       title: 'Default Region',
                       subtitle: 'Davao Region',
-                      onTap: () {},
+                      onTap: () => context.push('/profile/settings/region'),
                     ),
                     _SettingsItem(
                       icon: LucideIcons.palette,
@@ -216,7 +216,7 @@ class ProfilePage extends ConsumerWidget {
                       icon: LucideIcons.lock,
                       title: 'Privacy & Security',
                       subtitle: 'Password, data, permissions',
-                      onTap: () {},
+                      onTap: () => context.push('/profile/settings/privacy'),
                     ),
                   ],
                 ),
@@ -230,7 +230,7 @@ class ProfilePage extends ConsumerWidget {
                       icon: LucideIcons.info,
                       title: 'Help Center',
                       subtitle: 'FAQs and support',
-                      onTap: () {},
+                      onTap: () => context.push('/profile/settings/help'),
                     ),
                   ],
                 ),

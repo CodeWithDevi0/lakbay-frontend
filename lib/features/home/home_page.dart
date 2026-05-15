@@ -5,6 +5,9 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../shared/data/destinations_data.dart';
 import '../../shared/widgets/destination_card.dart';
 import '../../shared/widgets/destination_preview_modal.dart';
+import '../../shared/providers/notification_provider.dart';
+import '../../shared/widgets/filter_modal.dart';
+import 'package:go_router/go_router.dart';
 
 final searchQueryProvider = StateProvider.autoDispose<String>((ref) => '');
 
@@ -50,18 +53,49 @@ class HomePage extends ConsumerWidget {
                               Text('Juan! 👋', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                             ],
                           ),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: isDark ? Colors.grey[800] : Colors.white,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
-                              ],
-                            ),
-                            child: IconButton(
-                              icon: const Icon(LucideIcons.bell),
-                              onPressed: () {},
-                            ),
+                          Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: isDark ? Colors.grey[800] : Colors.white,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+                                  ],
+                                ),
+                                child: IconButton(
+                                  icon: const Icon(LucideIcons.bell),
+                                  onPressed: () => context.push('/home/notifications'),
+                                ),
+                              ),
+                              Consumer(
+                                builder: (context, ref, child) {
+                                  final count = ref.watch(unreadNotificationsCountProvider);
+                                  if (count == 0) return const SizedBox.shrink();
+                                  
+                                  return Positioned(
+                                    top: -2,
+                                    right: -2,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.red,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: isDark ? Colors.grey[800]! : Colors.white, width: 2),
+                                      ),
+                                      constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
+                                      child: Center(
+                                        child: Text(
+                                          count > 9 ? '9+' : '$count',
+                                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -100,7 +134,7 @@ class HomePage extends ConsumerWidget {
                             child: IconButton(
                               padding: const EdgeInsets.all(16),
                               icon: const Icon(LucideIcons.listFilter),
-                              onPressed: () {},
+                              onPressed: () => context.push('/filter'),
                             ),
                           ),
                         ],

@@ -17,12 +17,28 @@ class _SignupPageState extends ConsumerState<SignupPage> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  bool _isPasswordsMatch = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _passwordController.addListener(_validatePasswords);
+    _confirmPasswordController.addListener(_validatePasswords);
+  }
+
+  void _validatePasswords() {
+    setState(() {
+      _isPasswordsMatch = _passwordController.text == _confirmPasswordController.text;
+    });
+  }
 
   @override
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -163,12 +179,45 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                             ),
                           ),
                         ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Confirm Password',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _confirmPasswordController,
+                          obscureText: !showPassword,
+                          decoration: InputDecoration(
+                            hintText: 'Re-enter your password',
+                            filled: true,
+                            fillColor: isDark ? Colors.grey[800] : Colors.grey[100],
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: primaryColor, width: 2),
+                            ),
+                            errorText: !_isPasswordsMatch && _confirmPasswordController.text.isNotEmpty
+                                ? 'Passwords do not match'
+                                : null,
+                          ),
+                        ),
                         const SizedBox(height: 32),
                         SizedBox(
                           width: double.infinity,
                           height: 56,
                           child: ElevatedButton(
-                            onPressed: _handleSignup,
+                            onPressed: _isPasswordsMatch && 
+                                      _passwordController.text.isNotEmpty && 
+                                      _confirmPasswordController.text.isNotEmpty
+                                ? _handleSignup
+                                : null,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: primaryColor,
                               foregroundColor: Colors.white,
