@@ -18,12 +18,78 @@ class TripDetailsPage extends ConsumerStatefulWidget {
 class _TripDetailsPageState extends ConsumerState<TripDetailsPage> {
   String _activeTab = 'itinerary';
   int? _expandedDay = 1;
+  List<String> _notes = [];
+  bool _isInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeNotes();
+  }
+
+  void _initializeNotes() {
+    if (_isInitialized) return;
+    
+    final trip = mockTrips.firstWhere(
+      (t) => t.id == widget.id,
+      orElse: () => mockTrips.first,
+    );
+    _notes = List.from(trip.notes);
+    _isInitialized = true;
+  }
+
+  void _showNoteDialog({String? initialText, int? index}) {
+    final controller = TextEditingController(text: initialText);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(index == null ? 'Add Travel Note' : 'Edit Travel Note'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'Enter your note here...',
+          ),
+          maxLines: 3,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (controller.text.trim().isNotEmpty) {
+                setState(() {
+                  if (index == null) {
+                    _notes.add(controller.text.trim());
+                  } else {
+                    _notes[index] = controller.text.trim();
+                  }
+                });
+                Navigator.pop(context);
+              }
+            },
+            child: Text(index == null ? 'Add' : 'Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _deleteNote(int index) {
+    setState(() {
+      _notes.removeAt(index);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    _initializeNotes();
+
     final trip = mockTrips.firstWhere(
       (t) => t.id == widget.id,
-      orElse: () => throw Exception('Trip not found'),
+      orElse: () => mockTrips.first,
     );
 
     final theme = Theme.of(context);
@@ -128,7 +194,7 @@ class _TripDetailsPageState extends ConsumerState<TripDetailsPage> {
                               ],
                             ),
                             IconButton(
-                              onPressed: () {},
+                              onPressed: () => _showNoteDialog(),
                               icon: const Icon(LucideIcons.plus, size: 20),
                               style: IconButton.styleFrom(
                                 backgroundColor: primaryColor.withValues(alpha: 0.1),
@@ -138,22 +204,66 @@ class _TripDetailsPageState extends ConsumerState<TripDetailsPage> {
                           ],
                         ),
                         const SizedBox(height: 16),
-                        ...trip.notes.map((note) => Padding(
-                          padding: const EdgeInsets.only(bottom: 8.0),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('•', style: TextStyle(color: primaryColor, fontSize: 18)),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  note,
-                                  style: TextStyle(fontSize: 14, color: colorScheme.onSurface),
+                        if (_notes.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 20),
+                            child: Center(
+                              child: Text(
+                                'No notes yet. Add one to remember important details!',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: colorScheme.onSurface.withValues(alpha: 0.4),
+                                  fontSize: 14,
                                 ),
                               ),
-                            ],
-                          ),
-                        )),
+                            ),
+                          )
+                        else
+                          ...List.generate(_notes.length, (index) {
+                            final note = _notes[index];
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12.0),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4.0),
+                                    child: Text('•', style: TextStyle(color: primaryColor, fontSize: 18)),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      note,
+                                      style: TextStyle(fontSize: 14, color: colorScheme.onSurface),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        onPressed: () => _showNoteDialog(initialText: note, index: index),
+                                        icon: const Icon(LucideIcons.pencil, size: 16),
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(),
+                                        color: colorScheme.onSurface.withValues(alpha: 0.4),
+                                        visualDensity: VisualDensity.compact,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      IconButton(
+                                        onPressed: () => _deleteNote(index),
+                                        icon: const Icon(LucideIcons.trash2, size: 16),
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(),
+                                        color: colorScheme.error.withValues(alpha: 0.6),
+                                        visualDensity: VisualDensity.compact,
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
                       ],
                     ),
                   ),
