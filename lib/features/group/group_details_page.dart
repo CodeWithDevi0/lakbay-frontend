@@ -18,26 +18,89 @@ class GroupDetailsPage extends ConsumerStatefulWidget {
 class _GroupDetailsPageState extends ConsumerState<GroupDetailsPage> {
   String _activeTab = 'itinerary';
   int? _expandedDay = 1;
+  List<GroupMember> _members = [];
+  bool _isInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _members = [];
+    _initializeLocalData();
+  }
+
+  void _initializeLocalData() {
+    if (_isInitialized) return;
+    
+    try {
+      final group = mockGroupTrips.firstWhere(
+        (g) => g.id == widget.id,
+        orElse: () => mockGroupTrips.first,
+      );
+      
+      _members = List<GroupMember>.from(group.members as dynamic ?? <GroupMember>[]);
+      _isInitialized = true;
+    } catch (e) {
+      _members = [];
+      _isInitialized = true;
+    }
+  }
+
+  void _showAddMemberDialog() {
+    final nameController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add Group Member'),
+        content: TextField(
+          controller: nameController,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'Enter member name',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (nameController.text.trim().isNotEmpty) {
+                setState(() {
+                  _members.add(GroupMember(
+                    id: DateTime.now().millisecondsSinceEpoch.toString(),
+                    name: nameController.text.trim(),
+                    avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=${nameController.text.trim()}',
+                    isLeader: false,
+                    contribution: 0,
+                    spent: 0,
+                  ));
+                });
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final group = mockGroupTrips.firstWhere(
-      (g) => g.id == widget.id,
-      orElse: () => throw Exception('Group trip not found'),
-    );
-
+    final group = mockGroupTrips.firstWhere((g) => g.id == widget.id, orElse: () => mockGroupTrips.first);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final secondaryColor = colorScheme.secondary;
-    final leader = group.members.firstWhere((m) => m.isLeader);
-    final teamMembers = group.members.where((m) => !m.isLeader).toList();
-    final completedTasks = group.tasks.where((t) => t.completed).length;
+    final leader = _members.firstWhere((m) => m.isLeader, orElse: () => _members.isNotEmpty ? _members.first : GroupMember(id: '', name: 'N/A', avatar: '', isLeader: true, contribution: 0, spent: 0));
+    final teamMembers = _members.where((m) => !m.isLeader).toList();
+    final completedTasks = (group.tasks ?? []).where((t) => t.completed).length;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
-          // Header Image
           SliverAppBar(
             expandedHeight: 220,
             pinned: true,
@@ -94,7 +157,6 @@ class _GroupDetailsPageState extends ConsumerState<GroupDetailsPage> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Summary
                   _CardContainer(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -112,7 +174,6 @@ class _GroupDetailsPageState extends ConsumerState<GroupDetailsPage> {
                     ),
                   ),
 
-                  // Members Section
                   _CardContainer(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -125,14 +186,14 @@ class _GroupDetailsPageState extends ConsumerState<GroupDetailsPage> {
                                 Icon(LucideIcons.users, size: 20, color: secondaryColor),
                                 const SizedBox(width: 10),
                                 Text(
-                                  'Members (${group.members.length})',
+                                  'Members (${_members.length})',
                                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
                                 ),
                               ],
                             ),
                             Row(
                               children: [
-                                _SmallIconButton(icon: LucideIcons.userPlus, onTap: () {}),
+                                _SmallIconButton(icon: LucideIcons.userPlus, onTap: _showAddMemberDialog),
                                 const SizedBox(width: 8),
                                 _SmallIconButton(icon: LucideIcons.wallet, onTap: () => _showBudgetModal(context, group)),
                               ],
@@ -201,69 +262,6 @@ class _GroupDetailsPageState extends ConsumerState<GroupDetailsPage> {
                     ),
                   ),
 
-                  // Tasks Section
-                  _CardContainer(
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(LucideIcons.squareCheck, size: 20, color: secondaryColor),
-                                const SizedBox(width: 10),
-                                Text(
-                                  'Tasks ($completedTasks/${group.tasks.length})',
-                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
-                                ),
-                              ],
-                            ),
-                            _SmallIconButton(icon: LucideIcons.plus, onTap: () {}),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        ...group.tasks.map((task) => Container(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: colorScheme.onSurface.withValues(alpha: 0.05),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                task.completed ? LucideIcons.circleCheck : LucideIcons.circle,
-                                color: task.completed ? secondaryColor : colorScheme.onSurface.withValues(alpha: 0.3),
-                                size: 20,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      task.title,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        decoration: task.completed ? TextDecoration.lineThrough : null,
-                                        color: task.completed ? colorScheme.onSurface.withValues(alpha: 0.4) : colorScheme.onSurface,
-                                      ),
-                                    ),
-                                    Text(
-                                      task.assignedTo, 
-                                      style: TextStyle(fontSize: 12, color: colorScheme.onSurface.withValues(alpha: 0.5))
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        )),
-                      ],
-                    ),
-                  ),
-
-                  // Tabs
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
@@ -273,6 +271,12 @@ class _GroupDetailsPageState extends ConsumerState<GroupDetailsPage> {
                           isActive: _activeTab == 'itinerary',
                           color: secondaryColor,
                           onTap: () => setState(() => _activeTab = 'itinerary'),
+                        ),
+                        _TabButton(
+                          label: 'Tasks',
+                          isActive: _activeTab == 'tasks',
+                          color: secondaryColor,
+                          onTap: () => setState(() => _activeTab = 'tasks'),
                         ),
                         _TabButton(
                           label: 'Route',
@@ -291,14 +295,74 @@ class _GroupDetailsPageState extends ConsumerState<GroupDetailsPage> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Tab Content
                   if (_activeTab == 'itinerary')
-                    ...group.itinerary.map((day) => _GroupItineraryDayCard(
+                    ...(group.itinerary ?? []).map((day) => _GroupItineraryDayCard(
                       day: day,
                       isExpanded: _expandedDay == day.day,
                       onTap: () => setState(() => _expandedDay = _expandedDay == day.day ? null : day.day),
                     )),
                   
+                  if (_activeTab == 'tasks')
+                    _CardContainer(
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(LucideIcons.squareCheck, size: 20, color: secondaryColor),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    'Tasks ($completedTasks/${(group.tasks ?? []).length})',
+                                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          ...(group.tasks ?? []).map((task) => Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: colorScheme.onSurface.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  task.completed ? LucideIcons.circleCheck : LucideIcons.circle,
+                                  color: task.completed ? secondaryColor : colorScheme.onSurface.withValues(alpha: 0.3),
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        task.title,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          decoration: task.completed ? TextDecoration.lineThrough : null,
+                                          color: task.completed ? colorScheme.onSurface.withValues(alpha: 0.4) : colorScheme.onSurface,
+                                        ),
+                                      ),
+                                      Text(
+                                        task.assignedTo, 
+                                        style: TextStyle(fontSize: 12, color: colorScheme.onSurface.withValues(alpha: 0.5))
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )),
+                        ],
+                      ),
+                    ),
+
                   if (_activeTab == 'route')
                     _CardContainer(
                       child: Column(
@@ -329,7 +393,7 @@ class _GroupDetailsPageState extends ConsumerState<GroupDetailsPage> {
                                   Icon(LucideIcons.mapPin, size: 40, color: colorScheme.onSurface.withValues(alpha: 0.2)),
                                   const SizedBox(height: 8),
                                   Text(
-                                    'Interactive Map of Mt. Apo', 
+                                    'Interactive Map of ${group.destination}', 
                                     style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.4))
                                   ),
                                 ],
@@ -341,7 +405,7 @@ class _GroupDetailsPageState extends ConsumerState<GroupDetailsPage> {
                     ),
 
                   if (_activeTab == 'transport')
-                    ...group.transport.map((t) => _GroupTransportCard(transport: t)),
+                    ...(group.transport ?? []).map((t) => _GroupTransportCard(transport: t)),
 
                   const SizedBox(height: 40),
                 ],
@@ -474,7 +538,7 @@ class _GroupBudgetModal extends StatelessWidget {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colorScheme.onSurface)
                 ),
                 const SizedBox(height: 16),
-                ...group.members.map((m) => Container(
+                ...(group.members ?? []).map((m) => Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -527,7 +591,7 @@ class _GroupBudgetModal extends StatelessWidget {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colorScheme.onSurface)
                 ),
                 const SizedBox(height: 16),
-                ...group.budget.categories.map((cat) => Padding(
+                ...(group.budget.categories ?? []).map((cat) => Padding(
                   padding: const EdgeInsets.only(bottom: 16.0),
                   child: Column(
                     children: [
@@ -620,7 +684,7 @@ class _GroupItineraryDayCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
               child: Column(
-                children: day.activities.map((act) => Padding(
+                children: (day.activities ?? []).map((act) => Padding(
                   padding: const EdgeInsets.only(bottom: 16.0),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,

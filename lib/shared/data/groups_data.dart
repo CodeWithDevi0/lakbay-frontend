@@ -13,7 +13,7 @@ final List<GroupTrip> mockGroupTrips = [
       GroupMember(
         id: '1',
         name: 'Juan Dela Cruz',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Juan',
+        avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=Juan',
         isLeader: true,
         contribution: 4000,
         spent: 1200,
@@ -21,7 +21,7 @@ final List<GroupTrip> mockGroupTrips = [
       GroupMember(
         id: '2',
         name: 'Maria Santos',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Maria',
+        avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=Maria',
         isLeader: false,
         contribution: 4000,
         spent: 1200,
@@ -29,7 +29,7 @@ final List<GroupTrip> mockGroupTrips = [
       GroupMember(
         id: '3',
         name: 'Pedro Reyes',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Pedro',
+        avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=Pedro',
         isLeader: false,
         contribution: 4000,
         spent: 1200,
@@ -37,7 +37,7 @@ final List<GroupTrip> mockGroupTrips = [
       GroupMember(
         id: '4',
         name: 'Ana Garcia',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Ana',
+        avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=Ana',
         isLeader: false,
         contribution: 4000,
         spent: 1200,
