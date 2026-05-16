@@ -159,7 +159,7 @@ class ProfilePage extends ConsumerWidget {
                               color: Colors.white.withValues(alpha: 0.2),
                               shape: BoxShape.circle,
                             ),
-                            child: const Center(child: Text('🗺️', style: TextStyle(fontSize: 32))),
+                            child: Center(child: Icon(LucideIcons.map, size: 32, color: Colors.white)),
                           ),
                         ],
                       ),
@@ -243,7 +243,31 @@ class ProfilePage extends ConsumerWidget {
                   width: double.infinity,
                   height: 60,
                   child: ElevatedButton(
-                    onPressed: () => context.go('/'),
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Logout'),
+                          content: const Text('Are you sure you want to logout?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                                context.go('/landing');
+                              },
+                              style: TextButton.styleFrom(
+                                foregroundColor: colorScheme.error,
+                              ),
+                              child: const Text('Logout'),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: colorScheme.error.withValues(alpha: 0.1),
                       foregroundColor: colorScheme.error,
@@ -266,7 +290,14 @@ class ProfilePage extends ConsumerWidget {
                   child: Column(
                     children: [
                       Text('Lakbay+ v1.0.0', style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.3), fontSize: 12)),
-                      Text('Made with ❤️ for Davao Region', style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.3), fontSize: 12)),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('Made with ', style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.3), fontSize: 12)),
+                          Icon(LucideIcons.heart, size: 12, color: colorScheme.onSurface.withValues(alpha: 0.3)),
+                          Text(' for Davao Region', style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.3), fontSize: 12)),
+                        ],
+                      ),
                     ],
                   ),
                 ),
