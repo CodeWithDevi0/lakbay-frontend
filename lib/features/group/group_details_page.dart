@@ -19,6 +19,7 @@ class _GroupDetailsPageState extends ConsumerState<GroupDetailsPage> {
   String _activeTab = 'itinerary';
   int? _expandedDay = 1;
   List<GroupMember> _members = [];
+  late GroupBudget _budget;
   bool _isInitialized = false;
 
   @override
@@ -38,11 +39,124 @@ class _GroupDetailsPageState extends ConsumerState<GroupDetailsPage> {
       );
       
       _members = List<GroupMember>.from(group.members as dynamic ?? <GroupMember>[]);
+      _budget = group.budget;
       _isInitialized = true;
     } catch (e) {
       _members = [];
+      _budget = GroupBudget(total: 0, perPerson: 0, spent: 0, categories: []);
       _isInitialized = true;
     }
+  }
+
+  void _updateTotalBudget() {
+    final budgetController = TextEditingController(text: _budget.total.toInt().toString());
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Total Budget'),
+        content: TextField(
+          controller: budgetController,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: 'Total Amount (₱)',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              final newTotal = double.tryParse(budgetController.text) ?? _budget.total;
+              setState(() {
+                _budget = GroupBudget(
+                  total: newTotal,
+                  perPerson: _members.isEmpty ? newTotal : newTotal / _members.length,
+                  spent: _budget.spent,
+                  categories: _budget.categories,
+                );
+              });
+              Navigator.pop(context);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _editMemberContribution(int index) {
+    final m = _members[index];
+    final contribController = TextEditingController(text: m.contribution.toInt().toString());
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Edit Contribution: ${m.name}'),
+        content: TextField(
+          controller: contribController,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: 'Pledged Amount (₱)',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              final newContrib = double.tryParse(contribController.text) ?? m.contribution;
+              setState(() {
+                _members[index] = GroupMember(
+                  id: m.id,
+                  name: m.name,
+                  avatar: m.avatar,
+                  isLeader: m.isLeader,
+                  contribution: newContrib,
+                  spent: m.spent,
+                );
+              });
+              Navigator.pop(context);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _removeMember(int index) {
+    if (_members[index].isLeader) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cannot remove the group leader')),
+      );
+      return;
+    }
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remove Member?'),
+        content: Text('Are you sure you want to remove ${_members[index].name} from the group?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _members.removeAt(index);
+                // Recalculate per person budget
+                _budget = GroupBudget(
+                  total: _budget.total,
+                  perPerson: _members.isEmpty ? _budget.total : _budget.total / _members.length,
+                  spent: _budget.spent,
+                  categories: _budget.categories,
+                );
+              });
+              Navigator.pop(context);
+            },
+            child: const Text('Remove', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showAddMemberDialog() {
@@ -193,9 +307,15 @@ class _GroupDetailsPageState extends ConsumerState<GroupDetailsPage> {
                             ),
                             Row(
                               children: [
-                                _SmallIconButton(icon: LucideIcons.userPlus, onTap: _showAddMemberDialog),
+                                _SmallIconButton(
+                                  icon: LucideIcons.userPlus, 
+                                  onTap: _showAddMemberDialog,
+                                ),
                                 const SizedBox(width: 8),
-                                _SmallIconButton(icon: LucideIcons.wallet, onTap: () => _showBudgetModal(context, group)),
+                                _SmallIconButton(
+                                  icon: LucideIcons.wallet, 
+                                  onTap: () => _showBudgetModal(context, group),
+                                ),
                               ],
                             ),
                           ],
@@ -417,12 +537,128 @@ class _GroupDetailsPageState extends ConsumerState<GroupDetailsPage> {
     );
   }
 
-  void _showBudgetModal(BuildContext context, GroupTrip group) {
+  void _showBudgetModal(
+    BuildContext context, 
+    GroupTrip group, 
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _GroupBudgetModal(group: group),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return _GroupBudgetModal(
+            group: group,
+            budget: _budget,
+            members: _members,
+            onEditTotal: () {
+              final budgetController = TextEditingController(text: _budget.total.toInt().toString());
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Edit Total Budget'),
+                  content: TextField(
+                    controller: budgetController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Total Amount (₱)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+                    ElevatedButton(
+                      onPressed: () {
+                        final newTotal = double.tryParse(budgetController.text) ?? _budget.total;
+                        setState(() {
+                          _budget = GroupBudget(
+                            total: newTotal,
+                            perPerson: _members.isEmpty ? newTotal : newTotal / _members.length,
+                            spent: _budget.spent,
+                            categories: _budget.categories,
+                          );
+                        });
+                        setModalState(() {}); // Rebuild the modal
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Save'),
+                    ),
+                  ],
+                ),
+              );
+            },
+            onEditMember: (index) {
+              final m = _members[index];
+              final contribController = TextEditingController(text: m.contribution.toInt().toString());
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: Text('Edit Contribution: ${m.name}'),
+                  content: TextField(
+                    controller: contribController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Pledged Amount (₱)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+                    ElevatedButton(
+                      onPressed: () {
+                        final newContrib = double.tryParse(contribController.text) ?? m.contribution;
+                        setState(() {
+                          _members[index] = GroupMember(
+                            id: m.id,
+                            name: m.name,
+                            avatar: m.avatar,
+                            isLeader: m.isLeader,
+                            contribution: newContrib,
+                            spent: m.spent,
+                          );
+                        });
+                        setModalState(() {}); // Rebuild the modal
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Save'),
+                    ),
+                  ],
+                ),
+              );
+            },
+            onRemoveMember: (index) {
+              if (_members[index].isLeader) return;
+              
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Remove Member?'),
+                  content: Text('Are you sure you want to remove ${_members[index].name}?'),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _members.removeAt(index);
+                          _budget = GroupBudget(
+                            total: _budget.total,
+                            perPerson: _members.isEmpty ? _budget.total : _budget.total / _members.length,
+                            spent: _budget.spent,
+                            categories: _budget.categories,
+                          );
+                        });
+                        setModalState(() {}); // Rebuild the modal
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Remove', style: TextStyle(color: Colors.red)),
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }
@@ -450,14 +686,27 @@ class _SmallIconButton extends StatelessWidget {
 
 class _GroupBudgetModal extends StatelessWidget {
   final GroupTrip group;
-  const _GroupBudgetModal({required this.group});
+  final GroupBudget budget;
+  final List<GroupMember> members;
+  final VoidCallback onEditTotal;
+  final Function(int) onEditMember;
+  final Function(int) onRemoveMember;
+
+  const _GroupBudgetModal({
+    required this.group,
+    required this.budget,
+    required this.members,
+    required this.onEditTotal,
+    required this.onEditMember,
+    required this.onRemoveMember,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final secondaryColor = colorScheme.secondary;
-    final progress = group.budget.spent / group.budget.total;
+    final progress = budget.spent / (budget.total > 0 ? budget.total : 1);
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
@@ -494,9 +743,20 @@ class _GroupBudgetModal extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('Total Budget', style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.5))),
-                    Text(
-                      '₱${NumberFormat('#,###').format(group.budget.total)}', 
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: colorScheme.onSurface)
+                    Row(
+                      children: [
+                        Text(
+                          '₱${NumberFormat('#,###').format(budget.total)}', 
+                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: colorScheme.onSurface)
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: Icon(LucideIcons.pencil, size: 18, color: secondaryColor),
+                          onPressed: onEditTotal,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -506,7 +766,7 @@ class _GroupBudgetModal extends StatelessWidget {
                   children: [
                     Text('Per Person', style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.5))),
                     Text(
-                      '₱${NumberFormat('#,###').format(group.budget.perPerson)}', 
+                      '₱${NumberFormat('#,###').format(budget.perPerson)}', 
                       style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.onSurface)
                     ),
                   ],
@@ -517,7 +777,7 @@ class _GroupBudgetModal extends StatelessWidget {
                   children: [
                     Text('Spent', style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.5))),
                     Text(
-                      '₱${NumberFormat('#,###').format(group.budget.spent)}', 
+                      '₱${NumberFormat('#,###').format(budget.spent)}', 
                       style: TextStyle(color: secondaryColor, fontWeight: FontWeight.bold)
                     ),
                   ],
@@ -526,7 +786,7 @@ class _GroupBudgetModal extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(10),
                   child: LinearProgressIndicator(
-                    value: progress,
+                    value: progress.clamp(0.0, 1.0),
                     minHeight: 12,
                     backgroundColor: colorScheme.onSurface.withValues(alpha: 0.05),
                     valueColor: AlwaysStoppedAnimation<Color>(secondaryColor),
@@ -538,53 +798,78 @@ class _GroupBudgetModal extends StatelessWidget {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colorScheme.onSurface)
                 ),
                 const SizedBox(height: 16),
-                ...(group.members ?? []).map((m) => Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: colorScheme.onSurface.withValues(alpha: 0.05),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    children: [
-                      CircleAvatar(radius: 20, backgroundImage: NetworkImage(m.avatar)),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Text(
-                                  m.name, 
-                                  style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.onSurface)
-                                ),
-                                if (m.isLeader)
-                                  Container(
-                                    margin: const EdgeInsets.only(left: 8),
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: secondaryColor.withValues(alpha: 0.1), 
-                                      borderRadius: BorderRadius.circular(10)
-                                    ),
-                                    child: Text(
-                                      'Leader', 
-                                      style: TextStyle(color: secondaryColor, fontSize: 10, fontWeight: FontWeight.bold)
-                                    ),
+                ...(members ?? []).asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final m = entry.value;
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: colorScheme.onSurface.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      children: [
+                        CircleAvatar(radius: 20, backgroundImage: NetworkImage(m.avatar)),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    m.name, 
+                                    style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.onSurface)
                                   ),
-                              ],
+                                  if (m.isLeader)
+                                    Container(
+                                      margin: const EdgeInsets.only(left: 8),
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: secondaryColor.withValues(alpha: 0.1), 
+                                        borderRadius: BorderRadius.circular(10)
+                                      ),
+                                      child: Text(
+                                        'Leader', 
+                                        style: TextStyle(color: secondaryColor, fontSize: 10, fontWeight: FontWeight.bold)
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Pledged: ₱${NumberFormat('#,###').format(m.contribution)}  •  Spent: ₱${NumberFormat('#,###').format(m.spent)}',
+                                style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.5), fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(LucideIcons.pencil, size: 16),
+                              onPressed: () => onEditMember(index),
+                              color: colorScheme.onSurface.withValues(alpha: 0.4),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Pledged: ₱${NumberFormat('#,###').format(m.contribution)}  •  Spent: ₱${NumberFormat('#,###').format(m.spent)}',
-                              style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.5), fontSize: 12),
-                            ),
+                            const SizedBox(width: 8),
+                            if (!m.isLeader)
+                              IconButton(
+                                icon: const Icon(LucideIcons.trash2, size: 16),
+                                onPressed: () => onRemoveMember(index),
+                                color: Colors.red.withValues(alpha: 0.5),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                              ),
                           ],
                         ),
-                      ),
-                    ],
-                  ),
-                )),
+                      ],
+                    ),
+                  );
+                }),
                 const SizedBox(height: 32),
                 Text(
                   'Expense Breakdown', 
