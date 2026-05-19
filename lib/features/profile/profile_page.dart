@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../main.dart'; // For themeModeProvider
 import '../../app/api_service.dart';
+import '../../shared/providers/user_provider.dart';
 
 class PushNotificationsNotifier extends Notifier<bool> {
   @override
@@ -44,6 +45,7 @@ class ProfilePage extends ConsumerWidget {
     final primaryColor = colorScheme.primary;
     final secondaryColor = colorScheme.secondary;
     final themeMode = ref.watch(themeModeProvider);
+    final userProfile = ref.watch(userProfileProvider);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -95,10 +97,12 @@ class ProfilePage extends ConsumerWidget {
                                     ),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Center(
+                                  child: Center(
                                     child: Text(
-                                      'JD',
-                                      style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                                      userProfile.name.isNotEmpty
+                                          ? userProfile.name.split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join().toUpperCase()
+                                          : 'U',
+                                      style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
                                     ),
                                   ),
                                 ),
@@ -108,11 +112,11 @@ class ProfilePage extends ConsumerWidget {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Juan Dela Cruz',
+                                        userProfile.name,
                                         style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
                                       ),
                                       Text(
-                                        'juan.delacruz@email.com',
+                                        userProfile.email,
                                         style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.6), fontSize: 14),
                                       ),
                                     ],

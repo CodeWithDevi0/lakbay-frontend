@@ -9,6 +9,7 @@ import '../../shared/data/destinations_data.dart';
 import '../../shared/widgets/destination_card.dart';
 import '../../shared/widgets/destination_preview_modal.dart';
 import '../../shared/providers/notification_provider.dart';
+import '../../shared/providers/user_provider.dart';
 import 'package:go_router/go_router.dart';
 
 final searchQueryProvider = StateProvider.autoDispose<String>((ref) => '');
@@ -48,6 +49,7 @@ class HomePage extends ConsumerWidget {
 
     final locationAsync = ref.watch(currentLocationProvider);
     final searchQuery = ref.watch(searchQueryProvider);
+    final userProfile = ref.watch(userProfileProvider);
 
     final filteredDestinations = destinations.where((d) => 
       d.name.toLowerCase().contains(searchQuery.toLowerCase()) || 
@@ -111,7 +113,7 @@ class HomePage extends ConsumerWidget {
                                 ),
                               ),
                               Text(
-                                'Juan! 👋',
+                                '${userProfile.name.split(' ').first}! 👋',
                                 style: TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
